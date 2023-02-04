@@ -8,13 +8,18 @@ using Configurations;
 using Core.Model;
 using global::Polly;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Exception = System.Exception;
 
 public class PersistMessageDbContext : DbContext, IPersistMessageDbContext
 {
-    public PersistMessageDbContext(DbContextOptions<PersistMessageDbContext> options)
+    private readonly ILogger<PersistMessageDbContext> _logger;
+
+    public PersistMessageDbContext(DbContextOptions<PersistMessageDbContext> options,
+        ILogger<PersistMessageDbContext> logger)
         : base(options)
     {
+        _logger = logger;
     }
 
     public DbSet<PersistMessage> PersistMessages => Set<PersistMessage>();
@@ -37,10 +42,7 @@ public class PersistMessageDbContext : DbContext, IPersistMessageDbContext
                 {
                     if (exception != null)
                     {
-                        var factory = LoggerFactory.Create(b => b.AddConsole());
-                        var logger = factory.CreateLogger<PersistMessageDbContext>();
-
-                        logger.LogError(exception,
+                        _logger.LogError(exception,
                             "Request failed with {StatusCode}. Waiting {TimeSpan} before next retry. Retry attempt {RetryCount}.",
                             HttpStatusCode.Conflict,
                             timeSpan,
@@ -51,17 +53,21 @@ public class PersistMessageDbContext : DbContext, IPersistMessageDbContext
         {
             return await policy.ExecuteAsync(async () => await base.SaveChangesAsync(cancellationToken));
         }
+        //ref: https://learn.microsoft.com/en-us/ef/core/saving/concurrency?tabs=data-annotations#resolving-concurrency-conflicts
         catch (DbUpdateConcurrencyException ex)
         {
             foreach (var entry in ex.Entries)
             {
-                var currentEntity = entry.Entity; // we can use it for specific merging
                 var databaseValues = await entry.GetDatabaseValuesAsync(cancellationToken);
 
-                if (databaseValues != null)
+                if (databaseValues == null)
                 {
-                    entry.OriginalValues.SetValues(databaseValues);
+                    _logger.LogError("The record no longer exists in the database, The record has been deleted by another user.");
+                    throw;
                 }
+
+                // Refresh the original values to bypass next concurrency check
+                entry.OriginalValues.SetValues(databaseValues);
             }
 
             return await base.SaveChangesAsync(cancellationToken);
