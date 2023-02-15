@@ -3,13 +3,15 @@ using Identity.Identity.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace Identity.Extensions.Infrastructure;
 
+using System.Net;
+using Microsoft.IdentityModel.Logging;
+
 public static class IdentityServerExtensions
 {
-    public static IServiceCollection AddIdentityServer(this IServiceCollection services, IWebHostEnvironment env)
+    public static IServiceCollection AddCustomIdentityServer(this IServiceCollection services, IWebHostEnvironment env)
     {
         services.AddIdentity<User, Role>(config =>
             {
@@ -35,10 +37,8 @@ public static class IdentityServerExtensions
             .AddAspNetIdentity<User>()
             .AddResourceOwnerValidator<UserValidator>();
 
-        if (env.IsDevelopment())
-        {
-            identityServerBuilder.AddDeveloperSigningCredential();
-        }
+        //ref: https://documentation.openiddict.com/configuration/encryption-and-signing-credentials.html
+        identityServerBuilder.AddDeveloperSigningCredential();
 
         return services;
     }

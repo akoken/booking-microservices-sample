@@ -164,21 +164,21 @@ services:
     #  Postgres
     ######################################################
   postgres:
-   image: postgres:latest
-   container_name: postgres
-   restart: on-failure
-   ports:
-     - '5432:5432'
-   environment:
-     - POSTGRES_USER=postgres
-     - POSTGRES_PASSWORD=postgres
-   networks:
-     - booking
+    image: postgres:latest
+    container_name: postgres
+    restart: on-failure
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    networks:
+      - booking
 
 
-    #######################################################
-    #  Rabbitmq
-    #######################################################
+      #######################################################
+      #  Rabbitmq
+      #######################################################
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:3-management
@@ -252,7 +252,7 @@ services:
     #######################################################
   elasticsearch:
     container_name: elasticsearch
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.2
+    image: elasticsearch:7.17.9
     restart: unless-stopped
     ports:
       - 9200:9200
@@ -271,7 +271,7 @@ services:
       #######################################################
   kibana:
     container_name: kibana
-    image: docker.elastic.co/kibana/kibana:7.9.2
+    image: kibana:7.17.9
     restart: unless-stopped
     ports:
       - 5601:5601
@@ -283,15 +283,10 @@ services:
       - booking
 
 
-
 networks:
   booking:
-    name: booking
-
 
 volumes:
-  db-data:
-    external: false
   elasticsearch-data:
 
 
