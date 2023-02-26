@@ -2,12 +2,13 @@
   <img src="assets/logo.png" alt="booking-microservices" />
     <div align="center">
            <a href="https://github.com/meysamhadeli/booking-microservices/actions/workflows/ci.yml"><img alt="ci-status" src="https://github.com/meysamhadeli/booking-microservices/actions/workflows/ci.yml/badge.svg?branch=main&style=flat-square"/></a>
-         <a href="https://gitpod.io/#https://github.com/meysamhadeli/booking-microservices"><img src="https://img.shields.io/badge/Gitpod-live--code-blue?logo=gitpod&style=flat-square&color=ff69b4"/></a>
                  <a href="https://github.com/meysamhadeli/booking-microservices/blob/main/LICENSE"><img alt="build-status"          src="https://img.shields.io/github/license/meysamhadeli/booking-microservices?color=%234275f5&style=flat-square"/></a>
     </div>
 </div>
-
+           
 > **The main idea of creating this project is implementing an infrastructure for up and running distributed system with the latest technology and architecture like Vertical Slice Architecture, Event Sourcing, CQRS, DDD, gRpc, MongoDB, RabbitMq, Masstransit in .Net, and we will not deal mainly with business.** 🚀
+
+<a href="https://gitpod.io/#https://github.com/meysamhadeli/booking-microservices"><img alt="Open in Gitpod" src="https://gitpod.io/button/open-in-gitpod.svg"/></a>
 
 # Table of Contents
 
@@ -60,7 +61,7 @@ High-level plan is represented in the table
 | Booking Service   | Completed ✔️   |
 | Building Blocks   | Completed ✔️   |
 
-## :heart: Technologies - Libraries
+## Technologies - Libraries
 
 - ✔️ **[`.NET 7`](https://dotnet.microsoft.com/download)** - .NET Framework and .NET Core, including ASP.NET and ASP.NET Core
 - ✔️ **[`MVC Versioning API`](https://github.com/microsoft/aspnet-api-versioning)** - Set of libraries which add service API versioning to ASP.NET Web API, OData with ASP.NET Web API, and ASP.NET Core
@@ -134,9 +135,10 @@ Using the CQRS pattern, we cut each business functionality into vertical slices,
 
 ## How to Run
 
-### Config Certificate
+> ### Docker
 
-Run the following commands for [self-signed certificates](https://docs.microsoft.com/en-us/aspnet/core/security/docker-compose-https?view=aspnetcore-6.0) in your system
+#### Config Certificate
+Run the following commands to [Config SSL](https://docs.microsoft.com/en-us/aspnet/core/security/docker-compose-https?view=aspnetcore-6.0) in your system
 
 #### Windows using Linux containers
 ```bash
@@ -150,7 +152,7 @@ dotnet dev-certs https --trust
 dotnet dev-certs https -ep ${HOME}/.aspnet/https/aspnetapp.pfx -p $CREDENTIAL_PLACEHOLDER$
 dotnet dev-certs https --trust
 ```
-### Docker Compose
+#### Docker Compose
 
 Run this app in docker using the [docker-compose.yaml](./deployments/docker-compose/docker-compose.yaml) file with the below command at the root of the application:
 
@@ -158,12 +160,33 @@ Run this app in docker using the [docker-compose.yaml](./deployments/docker-comp
 docker-compose -f ./deployments/docker-compose/docker-compose.yaml up -d
 ```
 
-### Kubernetes - TODO
+> ### Kubernetes
+1- Run the following command for applying TLS in Kubernetes cluster
+
+```bash
+kubectl apply -f ./deployments/kubernetes/booking-secret.yml
+```
+> Note: Also, we can run this commands for creating new `tls.key` and `tls.crt` and replace them with old one in `booking-secret.yml`
+```bash
+openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout tls.key -out tls.crt -subj "/CN=booking-microservices.com" -days 365
+
+kubectl create secret tls booking-tls --key tls.key --cert tls.crt
+```
+
+2- Run the following command to apply all deployments and services and configmaps that we need
+```bash
+kubectl apply -f ./deployments/kubernetes/booking-microservices.yml
+```
+
+3- Run the following command for apply ingress-controller for revers proxy
+```bash
+kubectl apply -f ./deployments/kubernetes/ingress.yml
+```
 
 ### Documentation Apis
 
 Each microservice uses swagger open api, navigate to /swagger for a list of every endpoint.
-For testing apis I used the [REST Client](https://github.com/Huachao/vscode-restclient) plugin for VSCode running this file [booking.rest](./booking.rest).
+For testing apis I used the [REST Client](https://github.com/Huachao/vscode-restclient) plugin for VS Code running this file [booking.rest](./booking.rest).
 
 # Support
 
@@ -175,7 +198,7 @@ Thanks a bunch for supporting me!
 
 ## Contribution
 
-Thanks to all [contributors](https://github.com/meysamhadeli/booking-microservices/graphs/contributors), you're awesome and this wouldn't be possible without you! The goal is to build a categorized community-driven collection of very well-known resources.
+Thanks to all [contributors](https://github.com/meysamhadeli/booking-microservices/graphs/contributors), you're awesome and this wouldn't be possible without you! The goal is to build a categorized, community-driven collection of very well-known resources.
 
 ## Project References & Credits
 
