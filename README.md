@@ -119,7 +119,9 @@ When adding or changing a feature in an application in n-tire architecture, we a
 
 With this approach, each of our vertical slices can decide for itself how to best fulfill the request. New features only add code, we're not changing shared code and worrying about side effects.
 
-![](./assets/Vertical-Slice-Architecture.jpg)
+<div align="center">
+  <img src="./assets/vertical-slice-architecture.png" />
+</div>
 
 Instead of grouping related action methods in one controller, as found in traditional ASP.net controllers, I used the [REPR pattern](https://deviq.com/design-patterns/repr-design-pattern). Each action gets its own small endpoint, consisting of a route, the action, and an `IMediator` instance (see [MediatR](https://github.com/jbogard/MediatR)). The request is passed to the `IMediator` instance, routed through a [`Mediatr pipeline`](https://lostechies.com/jimmybogard/2014/09/09/tackling-cross-cutting-concerns-with-a-mediator-pipeline/) where custom [middleware](https://github.com/jbogard/MediatR/wiki/Behaviors) can log, validate and intercept requests. The request is then handled by a request specific `IRequestHandler` which performs business logic before returning the result.
 
@@ -161,26 +163,21 @@ docker-compose -f ./deployments/docker-compose/docker-compose.yaml up -d
 ```
 
 > ### Kubernetes
-1- Run the following command for applying TLS in Kubernetes cluster
+For Configure TLS in kubernetes cluster we need install `cert-manager` base on [docs](https://cert-manager.io/docs/installation) and run the following commands for apply TLS in our application
 
 ```bash
-kubectl apply -f ./deployments/kubernetes/booking-secret.yml
+kubectl apply -f ./deployments/kubernetes/booking-cert-manager.yml
 ```
-> Note: Also, we can run this commands for creating new `tls.key` and `tls.crt` and replace them with old one in `booking-secret.yml`
+> Note: Also, we can run this commands for creating new `tls.key` and `tls.crt` and replace them with old one in `booking-cert-manager.yml` section `secret`
 ```bash
 openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout tls.key -out tls.crt -subj "/CN=booking-microservices.com" -days 365
 
 kubectl create secret tls booking-tls --key tls.key --cert tls.crt
 ```
 
-2- Run the following command to apply all deployments and services and configmaps that we need
+Run the following command to apply all deployments, pods, services, ingress and configmaps that we need
 ```bash
 kubectl apply -f ./deployments/kubernetes/booking-microservices.yml
-```
-
-3- Run the following command for apply ingress-controller for revers proxy
-```bash
-kubectl apply -f ./deployments/kubernetes/ingress.yml
 ```
 
 ### Documentation Apis
