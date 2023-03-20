@@ -5,6 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace BuildingBlocks.PersistMessageProcessor;
 
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+
 public static class Extensions
 {
     public static IServiceCollection AddPersistMessageProcessor(this IServiceCollection services)
@@ -32,5 +35,19 @@ public static class Extensions
         services.AddHostedService<PersistMessageBackgroundService>();
 
         return services;
+    }
+
+    public static IApplicationBuilder UseMigrationPersistMessage<TContext>(this IApplicationBuilder app, IWebHostEnvironment env)
+        where TContext : DbContext, IPersistMessageDbContext
+    {
+        using var scope = app.ApplicationServices.CreateScope();
+
+        var persistMessageContext = scope.ServiceProvider.GetRequiredService<PersistMessageDbContext>();
+        persistMessageContext.Database.Migrate();
+
+        var context = scope.ServiceProvider.GetRequiredService<TContext>();
+        context.Database.Migrate();
+
+        return app;
     }
 }
