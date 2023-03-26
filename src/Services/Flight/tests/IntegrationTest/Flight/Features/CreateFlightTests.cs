@@ -3,12 +3,13 @@ using BuildingBlocks.Contracts.EventBus.Messages;
 using BuildingBlocks.TestBase;
 using Flight.Api;
 using Flight.Data;
-using Flight.Flights.Features.CreateFlight.Commands.V1.Reads;
 using FluentAssertions;
 using Integration.Test.Fakes;
 using Xunit;
 
 namespace Integration.Test.Flight.Features;
+
+using global::Flight.Flights.Features.CreatingFlight.V1;
 
 public class CreateFlightTests : FlightIntegrationTestBase
 {
@@ -28,11 +29,11 @@ public class CreateFlightTests : FlightIntegrationTestBase
 
         // Assert
         response.Should().NotBeNull();
-        response?.FlightNumber.Should().Be(command.FlightNumber);
+        response?.Id.Should().Be(command.Id);
 
         (await Fixture.WaitForPublishing<FlightCreated>()).Should().Be(true);
         (await Fixture.WaitForConsuming<FlightCreated>()).Should().Be(true);
 
-        (await Fixture.ShouldProcessedPersistInternalCommand<CreateFlightMongoCommand>()).Should().Be(true);
+        (await Fixture.ShouldProcessedPersistInternalCommand<CreateFlightMongo>()).Should().Be(true);
     }
 }

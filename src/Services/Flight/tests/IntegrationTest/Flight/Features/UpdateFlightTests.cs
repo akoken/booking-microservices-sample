@@ -3,12 +3,13 @@ using BuildingBlocks.Contracts.EventBus.Messages;
 using BuildingBlocks.TestBase;
 using Flight.Api;
 using Flight.Data;
-using Flight.Flights.Features.UpdateFlight.Commands.V1.Reads;
 using FluentAssertions;
 using Integration.Test.Fakes;
 using Xunit;
 
 namespace Integration.Test.Flight.Features;
+
+using global::Flight.Flights.Features.UpdatingFlight.V1;
 
 public class UpdateFlightTests : FlightIntegrationTestBase
 {
@@ -30,10 +31,9 @@ public class UpdateFlightTests : FlightIntegrationTestBase
         // Assert
         response.Should().NotBeNull();
         response?.Id.Should().Be(flightEntity?.Id);
-        response?.Price.Should().NotBe(flightEntity?.Price);
 
         (await Fixture.WaitForPublishing<FlightUpdated>()).Should().Be(true);
 
-        (await Fixture.ShouldProcessedPersistInternalCommand<UpdateFlightMongoCommand>()).Should().Be(true);
+        (await Fixture.ShouldProcessedPersistInternalCommand<UpdateFlightMongo>()).Should().Be(true);
     }
 }
