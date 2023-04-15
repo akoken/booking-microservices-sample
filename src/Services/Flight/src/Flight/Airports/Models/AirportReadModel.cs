@@ -1,11 +1,13 @@
 ﻿namespace Flight.Airports.Models;
 
+using System;
+
 public class AirportReadModel
 {
-    public long Id { get; init; }
-    public long AirportId { get; init; }
-    public string Name { get; init; }
+    public required Guid Id { get; init; }
+    public required Guid AirportId { get; init; }
+    public required string Name { get; init; }
     public string Address { get; init; }
-    public string Code { get; init; }
-    public bool IsDeleted { get; init; }
+    public required string Code { get; init; }
+    public required bool IsDeleted { get; init; }
 }

@@ -1,19 +1,20 @@
 ﻿namespace Flight.Aircrafts.Features.CreatingAircraft.V1;
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
 using BuildingBlocks.Core.CQRS;
 using BuildingBlocks.Core.Event;
 using Exceptions;
-using Flight.Aircrafts.Models;
-using Flight.Data;
+using Models;
+using Data;
 using MapsterMapper;
 using MediatR;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
-public record CreateAircraftMongo(long Id, string Name, string Model, int ManufacturingYear, bool IsDeleted) : InternalCommand;
+public record CreateAircraftMongo(Guid Id, string Name, string Model, int ManufacturingYear, bool IsDeleted) : InternalCommand;
 
 public class CreateAircraftMongoHandler : ICommandHandler<CreateAircraftMongo>
 {

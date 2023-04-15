@@ -4,7 +4,6 @@ using BuildingBlocks.Core;
 using BuildingBlocks.EFCore;
 using BuildingBlocks.Exception;
 using BuildingBlocks.HealthCheck;
-using BuildingBlocks.IdsGenerator;
 using BuildingBlocks.Jwt;
 using BuildingBlocks.Logging;
 using BuildingBlocks.Mapster;
@@ -19,7 +18,6 @@ using Flight.Data;
 using Flight.Data.Seed;
 using Flight.GrpcServer.Services;
 using FluentValidation;
-using Hellang.Middleware.ProblemDetails;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -31,7 +29,6 @@ using Serilog;
 namespace Flight.Extensions.Infrastructure;
 
 using BuildingBlocks.PersistMessageProcessor.Data;
-using Microsoft.AspNetCore.HttpOverrides;
 
 public static class InfrastructureExtensions
 {
@@ -49,7 +46,7 @@ public static class InfrastructureExtensions
         });
 
         builder.Services.AddCustomMediatR();
-        builder.Services.AddCustomProblemDetails();
+        builder.Services.AddProblemDetails();
 
         var appOptions = builder.Services.GetOptions<AppOptions>(nameof(AppOptions));
         Console.WriteLine(FiggleFonts.Standard.Render(appOptions.Name));
@@ -86,8 +83,6 @@ public static class InfrastructureExtensions
             options.Interceptors.Add<GrpcExceptionInterceptor>();
         });
 
-        SnowFlakIdGenerator.Configure(1);
-
         builder.Services.AddEasyCaching(options => { options.UseInMemory(configuration, "mem"); });
 
         return builder;
@@ -99,7 +94,7 @@ public static class InfrastructureExtensions
         var env = app.Environment;
         var appOptions = app.GetOptions<AppOptions>(nameof(AppOptions));
 
-        app.UseProblemDetails();
+        app.UseCustomProblemDetails();
         app.UseSerilogRequestLogging(options =>
         {
             options.EnrichDiagnosticContext = LogEnrichHelper.EnrichFromRequest;

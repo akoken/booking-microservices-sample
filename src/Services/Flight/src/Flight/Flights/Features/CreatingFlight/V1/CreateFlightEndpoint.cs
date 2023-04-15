@@ -4,19 +4,18 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BuildingBlocks.Web;
-using Hellang.Middleware.ProblemDetails;
 using MapsterMapper;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.OpenApi.Models;
 
-public record CreateFlightRequestDto(string FlightNumber, long AircraftId, long DepartureAirportId,
-    DateTime DepartureDate, DateTime ArriveDate, long ArriveAirportId,
+public record CreateFlightRequestDto(string FlightNumber, Guid AircraftId, Guid DepartureAirportId,
+    DateTime DepartureDate, DateTime ArriveDate, Guid ArriveAirportId,
     decimal DurationMinutes, DateTime FlightDate, Enums.FlightStatus Status, decimal Price);
 
-public record CreateFlightResponseDto(long Id);
+public record CreateFlightResponseDto(Guid Id);
 
 public class CreateFlightEndpoint : IMinimalEndpoint
 {
@@ -24,25 +23,11 @@ public class CreateFlightEndpoint : IMinimalEndpoint
     {
         builder.MapPost($"{EndpointConfig.BaseApiPath}/flight", CreateFlight)
             .RequireAuthorization()
-            .WithTags("Flight")
             .WithName("CreateFlight")
-            .WithMetadata(new SwaggerOperationAttribute("Create Flight", "Create Flight"))
             .WithApiVersionSet(builder.NewApiVersionSet("Flight").Build())
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status201Created,
-                    "Flight Created",
-                    typeof(CreateFlightResponseDto)))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status400BadRequest,
-                    "BadRequest",
-                    typeof(StatusCodeProblemDetails)))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status401Unauthorized,
-                    "UnAuthorized",
-                    typeof(StatusCodeProblemDetails)))
+            .Produces<CreateFlightResponseDto>(StatusCodes.Status201Created)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .WithOpenApi(operation => new OpenApiOperation(operation) { Summary = "Create Flight", Description = "Create Flight" })
             .HasApiVersion(1.0);
 
         return builder;
@@ -57,6 +42,6 @@ public class CreateFlightEndpoint : IMinimalEndpoint
 
         var response = new CreateFlightResponseDto(result.Id);
 
-        return Results.CreatedAtRoute("GetFlightById", new {id = result.Id}, response);
+        return Results.CreatedAtRoute("GetFlightById", new { id = result.Id }, response);
     }
 }

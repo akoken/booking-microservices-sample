@@ -1,19 +1,18 @@
 namespace Flight.Seats.Features.CreatingSeat.V1;
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BuildingBlocks.Web;
-using Flight.Seats.Dtos;
-using Hellang.Middleware.ProblemDetails;
 using MapsterMapper;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.OpenApi.Models;
 
-public record CreateSeatRequestDto(string SeatNumber, Enums.SeatType Type, Enums.SeatClass Class, long FlightId);
-public record CreateSeatResponseDto(long Id);
+public record CreateSeatRequestDto(string SeatNumber, Enums.SeatType Type, Enums.SeatClass Class, Guid FlightId);
+public record CreateSeatResponseDto(Guid Id);
 
 public class CreateSeatEndpoint : IMinimalEndpoint
 {
@@ -21,25 +20,11 @@ public class CreateSeatEndpoint : IMinimalEndpoint
     {
         builder.MapPost($"{EndpointConfig.BaseApiPath}/flight/seat", CreateSeat)
             .RequireAuthorization()
-            .WithTags("Flight")
             .WithName("CreateSeat")
-            .WithMetadata(new SwaggerOperationAttribute("Create Seat", "Create Seat"))
             .WithApiVersionSet(builder.NewApiVersionSet("Flight").Build())
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status200OK,
-                    "Seat Created",
-                    typeof(CreateSeatResponseDto)))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status400BadRequest,
-                    "BadRequest",
-                    typeof(StatusCodeProblemDetails)))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status401Unauthorized,
-                    "UnAuthorized",
-                    typeof(StatusCodeProblemDetails)))
+            .Produces<CreateSeatResponseDto>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .WithOpenApi(operation => new OpenApiOperation(operation) { Summary = "Create Seat", Description = "Create Seat" })
             .HasApiVersion(1.0);
 
         return builder;

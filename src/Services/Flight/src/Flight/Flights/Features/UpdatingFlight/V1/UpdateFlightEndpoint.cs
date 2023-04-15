@@ -4,17 +4,15 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BuildingBlocks.Web;
-using Dtos;
-using Hellang.Middleware.ProblemDetails;
 using MapsterMapper;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.OpenApi.Models;
 
-public record UpdateFlightRequestDto(long Id, string FlightNumber, long AircraftId, long DepartureAirportId, DateTime DepartureDate, DateTime ArriveDate,
-    long ArriveAirportId, decimal DurationMinutes, DateTime FlightDate, Enums.FlightStatus Status, decimal Price, bool IsDeleted);
+public record UpdateFlightRequestDto(Guid Id, string FlightNumber, Guid AircraftId, Guid DepartureAirportId, DateTime DepartureDate, DateTime ArriveDate,
+    Guid ArriveAirportId, decimal DurationMinutes, DateTime FlightDate, Enums.FlightStatus Status, decimal Price, bool IsDeleted);
 
 public class UpdateFlightEndpoint : IMinimalEndpoint
 {
@@ -22,27 +20,11 @@ public class UpdateFlightEndpoint : IMinimalEndpoint
     {
         builder.MapPut($"{EndpointConfig.BaseApiPath}/flight", UpdateFlight)
             .RequireAuthorization()
-            .WithTags("Flight")
             .WithName("UpdateFlight")
-            .WithMetadata(new SwaggerOperationAttribute("Update Flight", "Update Flight"))
             .WithApiVersionSet(builder.NewApiVersionSet("Flight").Build())
-            .Produces<FlightDto>()
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status400BadRequest)
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status204NoContent,
-                    "Flight Updated"))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status400BadRequest,
-                    "BadRequest",
-                    typeof(StatusCodeProblemDetails)))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status401Unauthorized,
-                    "UnAuthorized",
-                    typeof(StatusCodeProblemDetails)))
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .WithOpenApi(operation => new OpenApiOperation(operation) { Summary = "Update Flight", Description = "Update Flight" })
             .HasApiVersion(1.0);
 
         return builder;

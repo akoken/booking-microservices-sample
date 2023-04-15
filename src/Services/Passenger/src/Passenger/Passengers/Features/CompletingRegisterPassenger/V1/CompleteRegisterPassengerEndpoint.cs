@@ -1,14 +1,13 @@
 namespace Passenger.Passengers.Features.CompletingRegisterPassenger.V1;
 
 using BuildingBlocks.Web;
-using Hellang.Middleware.ProblemDetails;
 using MapsterMapper;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Dtos;
-using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.OpenApi.Models;
 
 public record CompleteRegisterPassengerRequestDto(string PassportNumber, Enums.PassengerType PassengerType, int Age);
 public record CompleteRegisterPassengerResponseDto(PassengerDto PassengerDto);
@@ -19,25 +18,11 @@ public class CompleteRegisterPassengerEndpoint : IMinimalEndpoint
     {
         builder.MapPost($"{EndpointConfig.BaseApiPath}/passenger/complete-registration", CompleteRegisterPassenger)
             .RequireAuthorization()
-            .WithTags("Passenger")
             .WithName("CompleteRegisterPassenger")
-            .WithMetadata(new SwaggerOperationAttribute("Complete Register Passenger", "Complete Register Passenger"))
             .WithApiVersionSet(builder.NewApiVersionSet("Passenger").Build())
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status200OK,
-                    "Register Passenger Completed",
-                    typeof(CompleteRegisterPassengerResponseDto)))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status400BadRequest,
-                    "BadRequest",
-                    typeof(StatusCodeProblemDetails)))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status401Unauthorized,
-                    "UnAuthorized",
-                    typeof(StatusCodeProblemDetails)))
+            .Produces<CompleteRegisterPassengerResponseDto>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .WithOpenApi(operation => new OpenApiOperation(operation) { Summary = "Complete Register Passenger", Description = "Complete Register Passenger" })
             .HasApiVersion(1.0);
 
         return builder;

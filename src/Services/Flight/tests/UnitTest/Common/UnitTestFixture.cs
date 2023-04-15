@@ -1,5 +1,4 @@
 ﻿using System;
-using BuildingBlocks.IdsGenerator;
 using Flight.Data;
 using MapsterMapper;
 using Xunit;
@@ -13,7 +12,6 @@ namespace Unit.Test.Common
     {
         public UnitTestFixture()
         {
-            SnowFlakIdGeneratorFactory.Create();
             Mapper = MapperFactory.Create();
             DbContext = DbContextFactory.Create();
         }

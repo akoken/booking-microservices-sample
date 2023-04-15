@@ -1,15 +1,14 @@
 ﻿namespace Flight.Flights.Features.DeletingFlight.V1;
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BuildingBlocks.Web;
-using Flight.Flights.Dtos;
-using Hellang.Middleware.ProblemDetails;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.OpenApi.Models;
 
 public class DeleteFlightEndpoint : IMinimalEndpoint
 {
@@ -17,30 +16,17 @@ public class DeleteFlightEndpoint : IMinimalEndpoint
     {
         builder.MapDelete($"{EndpointConfig.BaseApiPath}/flight/{{id}}", DeleteFlight)
             .RequireAuthorization()
-            .WithTags("Flight")
             .WithName("DeleteFlight")
-            .WithMetadata(new SwaggerOperationAttribute("Delete Flight", "Delete Flight"))
             .WithApiVersionSet(builder.NewApiVersionSet("Flight").Build())
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status204NoContent,
-                    "Flight Deleted"))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status400BadRequest,
-                    "BadRequest",
-                    typeof(StatusCodeProblemDetails)))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status401Unauthorized,
-                    "UnAuthorized",
-                    typeof(StatusCodeProblemDetails)))
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .WithOpenApi(operation => new OpenApiOperation(operation) { Summary = "Delete Flight", Description = "Delete Flight" })
             .HasApiVersion(1.0);
 
         return builder;
     }
 
-    private async Task<IResult> DeleteFlight(long id, IMediator mediator, CancellationToken cancellationToken)
+    private async Task<IResult> DeleteFlight(Guid id, IMediator mediator, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new DeleteFlight(id), cancellationToken);
 

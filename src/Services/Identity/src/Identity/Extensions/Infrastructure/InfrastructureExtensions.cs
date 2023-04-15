@@ -3,7 +3,6 @@ using System.Threading.RateLimiting;
 using BuildingBlocks.Core;
 using BuildingBlocks.EFCore;
 using BuildingBlocks.HealthCheck;
-using BuildingBlocks.IdsGenerator;
 using BuildingBlocks.Logging;
 using BuildingBlocks.Mapster;
 using BuildingBlocks.MassTransit;
@@ -13,7 +12,6 @@ using BuildingBlocks.Swagger;
 using BuildingBlocks.Web;
 using Figgle;
 using FluentValidation;
-using Hellang.Middleware.ProblemDetails;
 using Identity.Data;
 using Identity.Data.Seed;
 using Microsoft.AspNetCore.Builder;
@@ -69,14 +67,12 @@ public static class InfrastructureExtensions
         builder.Services.AddCustomVersioning();
         builder.Services.AddCustomMediatR();
         builder.Services.AddValidatorsFromAssembly(typeof(IdentityRoot).Assembly);
-        builder.Services.AddCustomProblemDetails();
+        builder.Services.AddProblemDetails();
         builder.Services.AddCustomMapster(typeof(IdentityRoot).Assembly);
         builder.Services.AddCustomHealthCheck();
 
         builder.Services.AddCustomMassTransit(env, typeof(IdentityRoot).Assembly);
         builder.Services.AddCustomOpenTelemetry();
-
-        SnowFlakIdGenerator.Configure(4);
 
         builder.AddCustomIdentityServer();
 
@@ -97,7 +93,7 @@ public static class InfrastructureExtensions
 
         app.UseForwardedHeaders();
 
-        app.UseProblemDetails();
+        app.UseCustomProblemDetails();
         app.UseSerilogRequestLogging(options =>
         {
             options.EnrichDiagnosticContext = LogEnrichHelper.EnrichFromRequest;
@@ -106,7 +102,6 @@ public static class InfrastructureExtensions
         app.UseMigration<IdentityContext>(env);
         app.UseCorrelationId();
         app.UseHttpMetrics();
-        app.UseProblemDetails();
         app.UseCustomHealthCheck();
         app.UseIdentityServer();
         app.MapMetrics();

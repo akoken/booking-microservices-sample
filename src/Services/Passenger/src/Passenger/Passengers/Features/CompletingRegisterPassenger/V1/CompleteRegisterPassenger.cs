@@ -3,17 +3,19 @@ namespace Passenger.Passengers.Features.CompletingRegisterPassenger.V1;
 using Ardalis.GuardClauses;
 using BuildingBlocks.Core.CQRS;
 using BuildingBlocks.Core.Event;
-using BuildingBlocks.IdsGenerator;
 using Exceptions;
 using FluentValidation;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using Data;
 using Dtos;
+using MassTransit;
 
-public record CompleteRegisterPassenger(string PassportNumber, Enums.PassengerType PassengerType, int Age) : ICommand<CompleteRegisterPassengerResult>, IInternalCommand
+public record CompleteRegisterPassenger
+    (string PassportNumber, Enums.PassengerType PassengerType, int Age) : ICommand<CompleteRegisterPassengerResult>,
+        IInternalCommand
 {
-    public long Id { get; init; } = SnowFlakIdGenerator.NewId();
+    public Guid Id { get; init; } = NewId.NextGuid();
 }
 
 public record CompleteRegisterPassengerResult(PassengerDto PassengerDto);
@@ -33,7 +35,9 @@ internal class CompleteRegisterPassengerValidator : AbstractValidator<CompleteRe
     }
 }
 
-internal class CompleteRegisterPassengerCommandHandler : ICommandHandler<CompleteRegisterPassenger, CompleteRegisterPassengerResult>
+internal class
+    CompleteRegisterPassengerCommandHandler : ICommandHandler<CompleteRegisterPassenger,
+        CompleteRegisterPassengerResult>
 {
     private readonly IMapper _mapper;
     private readonly PassengerDbContext _passengerDbContext;
@@ -44,7 +48,8 @@ internal class CompleteRegisterPassengerCommandHandler : ICommandHandler<Complet
         _passengerDbContext = passengerDbContext;
     }
 
-    public async Task<CompleteRegisterPassengerResult> Handle(CompleteRegisterPassenger request, CancellationToken cancellationToken)
+    public async Task<CompleteRegisterPassengerResult> Handle(CompleteRegisterPassenger request,
+        CancellationToken cancellationToken)
     {
         Guard.Against.Null(request, nameof(request));
 

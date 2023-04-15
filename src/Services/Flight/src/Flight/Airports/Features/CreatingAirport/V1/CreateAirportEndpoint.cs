@@ -1,19 +1,18 @@
 namespace Flight.Airports.Features.CreatingAirport.V1;
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using BuildingBlocks.Web;
-using Dtos;
-using Hellang.Middleware.ProblemDetails;
 using MapsterMapper;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.OpenApi.Models;
 
 public record CreateAirportRequestDto(string Name, string Address, string Code);
-public record CreateAirportResponseDto(long Id);
+public record CreateAirportResponseDto(Guid Id);
 
 public class CreateAirportEndpoint : IMinimalEndpoint
 {
@@ -21,25 +20,11 @@ public class CreateAirportEndpoint : IMinimalEndpoint
     {
         builder.MapPost($"{EndpointConfig.BaseApiPath}/flight/airport", CreateAirport)
             .RequireAuthorization()
-            .WithTags("Flight")
             .WithName("CreateAirport")
-            .WithMetadata(new SwaggerOperationAttribute("Create Airport", "Create Airport"))
             .WithApiVersionSet(builder.NewApiVersionSet("Flight").Build())
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status200OK,
-                    "Airport Created",
-                    typeof(CreateAirportResponseDto)))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status400BadRequest,
-                    "BadRequest",
-                    typeof(StatusCodeProblemDetails)))
-            .WithMetadata(
-                new SwaggerResponseAttribute(
-                    StatusCodes.Status401Unauthorized,
-                    "UnAuthorized",
-                    typeof(StatusCodeProblemDetails)))
+            .Produces<CreateAirportResponseDto>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .WithOpenApi(operation => new OpenApiOperation(operation) { Summary = "Create Airport", Description = "Create Airport" })
             .HasApiVersion(1.0);
 
         return builder;
