@@ -36,7 +36,7 @@ public static class Extensions
                     {
                         dbOptions.MigrationsAssembly(typeof(TContext).Assembly.GetName().Name);
                         //ref: https://learn.microsoft.com/en-us/ef/core/miscellaneous/connection-resiliency
-                        dbOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(1), null);
+                        // dbOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(1), null);
                     })
                 // https://github.com/efcore/EFCore.NamingConventions
                 .UseSnakeCaseNamingConvention();
@@ -66,7 +66,7 @@ public static class Extensions
     {
         Expression<Func<IAggregate, bool>> filterExpr = e => !e.IsDeleted;
         foreach (var mutableEntityType in modelBuilder.Model.GetEntityTypes()
-                     .Where(m => m.ClrType.IsAssignableTo(typeof(IAudit))))
+                     .Where(m => m.ClrType.IsAssignableTo(typeof(IEntity))))
         {
             // modify expression to handle correct child type
             var parameter = Expression.Parameter(mutableEntityType.ClrType);

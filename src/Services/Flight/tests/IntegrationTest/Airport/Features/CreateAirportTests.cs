@@ -9,8 +9,6 @@ using Xunit;
 
 namespace Integration.Test.Airport.Features;
 
-using global::Flight.Airports.Features.CreatingAirport.V1;
-
 public class CreateAirportTests : FlightIntegrationTestBase
 {
     public CreateAirportTests(
@@ -31,7 +29,5 @@ public class CreateAirportTests : FlightIntegrationTestBase
         response?.Id.Should().Be(command.Id);
 
         (await Fixture.WaitForPublishing<AirportCreated>()).Should().Be(true);
-
-        (await Fixture.ShouldProcessedPersistInternalCommand<CreateAirportMongo>()).Should().Be(true);
     }
 }

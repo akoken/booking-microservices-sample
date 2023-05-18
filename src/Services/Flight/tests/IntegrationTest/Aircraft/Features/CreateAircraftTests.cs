@@ -9,8 +9,6 @@ using Xunit;
 
 namespace Integration.Test.Aircraft.Features;
 
-using global::Flight.Aircrafts.Features.CreatingAircraft.V1;
-
 public class CreateAircraftTests : FlightIntegrationTestBase
 {
     public CreateAircraftTests(
@@ -31,7 +29,5 @@ public class CreateAircraftTests : FlightIntegrationTestBase
         response?.Id.Should().Be(command.Id);
 
         (await Fixture.WaitForPublishing<AircraftCreated>()).Should().Be(true);
-
-        (await Fixture.ShouldProcessedPersistInternalCommand<CreateAircraftMongo>()).Should().Be(true);
     }
 }

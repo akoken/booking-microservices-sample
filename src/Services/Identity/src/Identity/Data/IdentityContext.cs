@@ -9,18 +9,19 @@ using BuildingBlocks.Core.Event;
 using BuildingBlocks.Core.Model;
 using BuildingBlocks.EFCore;
 using Identity.Identity.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Identity.Data;
 
 using System;
+using Microsoft.EntityFrameworkCore.Storage;
 
 public sealed class IdentityContext : IdentityDbContext<User, Role, Guid,
     UserClaim, UserRole, UserLogin, RoleClaim, UserToken>, IDbContext
 {
+    private IDbContextTransaction? _currentTransaction;
+
     public IdentityContext(DbContextOptions<IdentityContext> options) : base(options)
     {
     }
@@ -63,7 +64,7 @@ public sealed class IdentityContext : IdentityDbContext<User, Role, Guid,
     public IReadOnlyList<IDomainEvent> GetDomainEvents()
     {
         var domainEntities = ChangeTracker
-            .Entries<Aggregate>()
+            .Entries<IAggregate>()
             .Where(x => x.Entity.DomainEvents.Any())
             .Select(x => x.Entity)
             .ToList();

@@ -5,15 +5,50 @@ using Data;
 using Dtos;
 using FluentValidation;
 using MapsterMapper;
-using Microsoft.EntityFrameworkCore;
 using Ardalis.GuardClauses;
+using BuildingBlocks.Web;
 using Exceptions;
+using MediatR;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 public record GetPassengerById(Guid Id) : IQuery<GetPassengerByIdResult>;
 
 public record GetPassengerByIdResult(PassengerDto PassengerDto);
 
-internal class GetPassengerByIdValidator: AbstractValidator<GetPassengerById>
+public record GetPassengerByIdResponseDto(PassengerDto PassengerDto);
+
+public class GetPassengerByIdEndpoint : IMinimalEndpoint
+{
+    public IEndpointRouteBuilder MapEndpoint(IEndpointRouteBuilder builder)
+    {
+        builder.MapGet($"{EndpointConfig.BaseApiPath}/passenger/{{id}}",
+                async (Guid id, IMediator mediator, CancellationToken cancellationToken) =>
+                {
+                    var result = await mediator.Send(new GetPassengerById(id), cancellationToken);
+
+                    var response = new GetPassengerByIdResponseDto(result?.PassengerDto);
+
+                    return Results.Ok(response);
+                })
+            .RequireAuthorization()
+            .WithName("GetPassengerById")
+            .WithApiVersionSet(builder.NewApiVersionSet("Passenger").Build())
+            .Produces<GetPassengerByIdResponseDto>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .WithSummary("Get Passenger By Id")
+            .WithDescription("Get Passenger By Id")
+            .WithOpenApi()
+            .HasApiVersion(1.0);
+
+        return builder;
+    }
+}
+
+internal class GetPassengerByIdValidator : AbstractValidator<GetPassengerById>
 {
     public GetPassengerByIdValidator()
     {
@@ -23,13 +58,13 @@ internal class GetPassengerByIdValidator: AbstractValidator<GetPassengerById>
 
 internal class GetPassengerByIdHandler : IQueryHandler<GetPassengerById, GetPassengerByIdResult>
 {
-    private readonly PassengerDbContext _passengerDbContext;
     private readonly IMapper _mapper;
+    private readonly PassengerReadDbContext _passengerReadDbContext;
 
-    public GetPassengerByIdHandler(IMapper mapper, PassengerDbContext passengerDbContext)
+    public GetPassengerByIdHandler(IMapper mapper, PassengerReadDbContext passengerReadDbContext)
     {
         _mapper = mapper;
-        _passengerDbContext = passengerDbContext;
+        _passengerReadDbContext = passengerReadDbContext;
     }
 
     public async Task<GetPassengerByIdResult> Handle(GetPassengerById query, CancellationToken cancellationToken)
@@ -37,7 +72,8 @@ internal class GetPassengerByIdHandler : IQueryHandler<GetPassengerById, GetPass
         Guard.Against.Null(query, nameof(query));
 
         var passenger =
-            await _passengerDbContext.Passengers.SingleOrDefaultAsync(x => x.Id == query.Id, cancellationToken);
+            await _passengerReadDbContext.Passenger.AsQueryable()
+                .SingleOrDefaultAsync(x => x.PassengerId == query.Id && x.IsDeleted == false, cancellationToken);
 
         if (passenger is null)
         {

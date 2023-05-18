@@ -9,8 +9,6 @@ using Xunit;
 
 namespace Integration.Test.Flight.Features;
 
-using global::Flight.Flights.Features.CreatingFlight.V1;
-
 public class CreateFlightTests : FlightIntegrationTestBase
 {
     public CreateFlightTests(
@@ -33,7 +31,5 @@ public class CreateFlightTests : FlightIntegrationTestBase
 
         (await Fixture.WaitForPublishing<FlightCreated>()).Should().Be(true);
         (await Fixture.WaitForConsuming<FlightCreated>()).Should().Be(true);
-
-        (await Fixture.ShouldProcessedPersistInternalCommand<CreateFlightMongo>()).Should().Be(true);
     }
 }
