@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using BuildingBlocks.Core.Model;
-using BuildingBlocks.PersistMessageProcessor.Data;
 using BuildingBlocks.Web;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -35,8 +34,6 @@ public static class Extensions
                     dbOptions =>
                     {
                         dbOptions.MigrationsAssembly(typeof(TContext).Assembly.GetName().Name);
-                        //ref: https://learn.microsoft.com/en-us/ef/core/miscellaneous/connection-resiliency
-                        // dbOptions.EnableRetryOnFailure(3, TimeSpan.FromSeconds(1), null);
                     })
                 // https://github.com/efcore/EFCore.NamingConventions
                 .UseSnakeCaseNamingConvention();
@@ -113,9 +110,6 @@ public static class Extensions
         where TContext : DbContext, IDbContext
     {
         using var scope = serviceProvider.CreateScope();
-
-        var persistMessageContext = scope.ServiceProvider.GetRequiredService<PersistMessageDbContext>();
-        await persistMessageContext.Database.MigrateAsync();
 
         var context = scope.ServiceProvider.GetRequiredService<TContext>();
         await context.Database.MigrateAsync();

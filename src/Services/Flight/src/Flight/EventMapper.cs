@@ -5,6 +5,7 @@ using BuildingBlocks.Core.Event;
 namespace Flight;
 
 using Aircrafts.Features.CreatingAircraft.V1;
+using Aircrafts.ValueObjects;
 using Airports.Features.CreatingAirport.V1;
 using Flights.Features.CreatingFlight.V1;
 using Flights.Features.DeletingFlight.V1;
@@ -15,7 +16,7 @@ using Seats.Features.ReservingSeat.Commands.V1;
 // ref: https://www.ledjonbehluli.com/posts/domain_to_integration_event/
 public sealed class EventMapper : IEventMapper
 {
-    public IIntegrationEvent MapToIntegrationEvent(IDomainEvent @event)
+    public IIntegrationEvent? MapToIntegrationEvent(IDomainEvent @event)
     {
         return @event switch
         {
@@ -30,7 +31,7 @@ public sealed class EventMapper : IEventMapper
         };
     }
 
-    public IInternalCommand MapToInternalCommand(IDomainEvent @event)
+    public IInternalCommand? MapToInternalCommand(IDomainEvent @event)
     {
         return @event switch
         {

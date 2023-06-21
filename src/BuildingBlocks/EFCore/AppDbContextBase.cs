@@ -5,29 +5,75 @@ using Core.Event;
 using Core.Model;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 using Web;
 using Exception = System.Exception;
 using IsolationLevel = System.Data.IsolationLevel;
 
 public abstract class AppDbContextBase : DbContext, IDbContext
 {
-    private readonly ICurrentUserProvider _currentUserProvider;
-    private IDbContextTransaction? _currentTransaction;
+    private readonly ICurrentUserProvider? _currentUserProvider;
+    private readonly ILogger<AppDbContextBase>? _logger;
+    private IDbContextTransaction _currentTransaction;
 
-    protected AppDbContextBase(DbContextOptions options, ICurrentUserProvider currentUserProvider) :
+    protected AppDbContextBase(DbContextOptions options, ICurrentUserProvider? currentUserProvider = null, ILogger<AppDbContextBase>? logger = null) :
         base(options)
     {
         _currentUserProvider = currentUserProvider;
+        _logger = logger;
     }
+
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
     }
 
+    public IExecutionStrategy CreateExecutionStrategy() => Database.CreateExecutionStrategy();
+
+    public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        if (_currentTransaction != null) return;
+
+        _currentTransaction = await Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+    }
+
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await SaveChangesAsync(cancellationToken);
+            await _currentTransaction?.CommitAsync(cancellationToken)!;
+        }
+        catch
+        {
+            await RollbackTransactionAsync(cancellationToken);
+            throw;
+        }
+        finally
+        {
+            _currentTransaction?.Dispose();
+            _currentTransaction = null;
+        }
+    }
+
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _currentTransaction?.RollbackAsync(cancellationToken)!;
+        }
+        finally
+        {
+            _currentTransaction?.Dispose();
+            _currentTransaction = null;
+        }
+    }
+
+
     //ref: https://learn.microsoft.com/en-us/ef/core/miscellaneous/connection-resiliency#execution-strategies-and-transactions
     public Task ExecuteTransactionalAsync(CancellationToken cancellationToken = default)
     {
-        var strategy = Database.CreateExecutionStrategy();
+        var strategy = CreateExecutionStrategy();
         return strategy.ExecuteAsync(async () =>
         {
             await using var transaction =
@@ -48,7 +94,29 @@ public abstract class AppDbContextBase : DbContext, IDbContext
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         OnBeforeSaving();
-        return await base.SaveChangesAsync(cancellationToken);
+        try
+        {
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+        //ref: https://learn.microsoft.com/en-us/ef/core/saving/concurrency?tabs=data-annotations#resolving-concurrency-conflicts
+        catch (DbUpdateConcurrencyException ex)
+        {
+            foreach (var entry in ex.Entries)
+            {
+                var databaseValues = await entry.GetDatabaseValuesAsync(cancellationToken);
+
+                if (databaseValues == null)
+                {
+                    _logger.LogError("The record no longer exists in the database, The record has been deleted by another user.");
+                    throw;
+                }
+
+                // Refresh the original values to bypass next concurrency check
+                entry.OriginalValues.SetValues(databaseValues);
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
+        }
     }
 
     public IReadOnlyList<IDomainEvent> GetDomainEvents()

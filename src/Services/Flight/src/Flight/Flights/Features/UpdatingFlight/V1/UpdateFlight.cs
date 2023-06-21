@@ -3,6 +3,7 @@ namespace Flight.Flights.Features.UpdatingFlight.V1;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Aircrafts.ValueObjects;
 using Ardalis.GuardClauses;
 using BuildingBlocks.Caching;
 using BuildingBlocks.Core.CQRS;
@@ -11,6 +12,7 @@ using BuildingBlocks.Web;
 using Data;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Exceptions;
+using Flight.Airports.ValueObjects;
 using Flight.Flights.Features.CreatingFlight.V1;
 using FluentValidation;
 using MapsterMapper;
@@ -19,6 +21,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using ValueObjects;
 
 public record UpdateFlight(Guid Id, string FlightNumber, Guid AircraftId, Guid DepartureAirportId,
     DateTime DepartureDate, DateTime ArriveDate, Guid ArriveAirportId, decimal DurationMinutes, DateTime FlightDate,
@@ -110,12 +113,12 @@ internal class UpdateFlightHandler : ICommandHandler<UpdateFlight, UpdateFlightR
         }
 
 
-        flight.Update(request.Id, request.FlightNumber, request.AircraftId, request.DepartureAirportId,
-            request.DepartureDate,
-            request.ArriveDate, request.ArriveAirportId, request.DurationMinutes, request.FlightDate, request.Status,
-            request.Price, request.IsDeleted);
+        flight.Update(FlightId.Of(request.Id), FlightNumber.Of(request.FlightNumber), AircraftId.Of(request.AircraftId), AirportId.Of(request.DepartureAirportId),
+            DepartureDate.Of(request.DepartureDate),
+            ArriveDate.Of(request.ArriveDate), AirportId.Of(request.ArriveAirportId), DurationMinutes.Of(request.DurationMinutes), FlightDate.Of(request.FlightDate), request.Status,
+            Price.Of(request.Price), request.IsDeleted);
 
-        var updateFlight = (_flightDbContext.Flights.Update(flight))?.Entity;
+        var updateFlight = _flightDbContext.Flights.Update(flight).Entity;
 
         return new UpdateFlightResult(updateFlight.Id);
     }

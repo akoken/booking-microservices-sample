@@ -28,10 +28,6 @@ namespace Passenger.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<int>("Age")
-                        .HasColumnType("integer")
-                        .HasColumnName("age");
-
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -52,17 +48,12 @@ namespace Passenger.Data.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("last_modified_by");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("PassengerType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("text")
-                        .HasColumnName("name");
-
-                    b.Property<int>("PassengerType")
-                        .HasColumnType("integer")
+                        .HasDefaultValue("Unknown")
                         .HasColumnName("passenger_type");
-
-                    b.Property<string>("PassportNumber")
-                        .HasColumnType("text")
-                        .HasColumnName("passport_number");
 
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
@@ -73,6 +64,82 @@ namespace Passenger.Data.Migrations
                         .HasName("pk_passenger");
 
                     b.ToTable("passenger", (string)null);
+                });
+
+            modelBuilder.Entity("Passenger.Passengers.Models.Passenger", b =>
+                {
+                    b.OwnsOne("Passenger.Passengers.ValueObjects.Age", "Age", b1 =>
+                        {
+                            b1.Property<Guid>("PassengerId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<int>("Value")
+                                .HasMaxLength(3)
+                                .HasColumnType("integer")
+                                .HasColumnName("age");
+
+                            b1.HasKey("PassengerId")
+                                .HasName("pk_passenger");
+
+                            b1.ToTable("passenger");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PassengerId")
+                                .HasConstraintName("fk_passenger_passenger_id");
+                        });
+
+                    b.OwnsOne("Passenger.Passengers.ValueObjects.Name", "Name", b1 =>
+                        {
+                            b1.Property<Guid>("PassengerId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("name");
+
+                            b1.HasKey("PassengerId")
+                                .HasName("pk_passenger");
+
+                            b1.ToTable("passenger");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PassengerId")
+                                .HasConstraintName("fk_passenger_passenger_id");
+                        });
+
+                    b.OwnsOne("Passenger.Passengers.ValueObjects.PassportNumber", "PassportNumber", b1 =>
+                        {
+                            b1.Property<Guid>("PassengerId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Value")
+                                .IsRequired()
+                                .HasMaxLength(10)
+                                .HasColumnType("character varying(10)")
+                                .HasColumnName("passport_number");
+
+                            b1.HasKey("PassengerId")
+                                .HasName("pk_passenger");
+
+                            b1.ToTable("passenger");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PassengerId")
+                                .HasConstraintName("fk_passenger_passenger_id");
+                        });
+
+                    b.Navigation("Age");
+
+                    b.Navigation("Name")
+                        .IsRequired();
+
+                    b.Navigation("PassportNumber")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

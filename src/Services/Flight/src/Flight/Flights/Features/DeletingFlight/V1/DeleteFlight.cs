@@ -1,6 +1,7 @@
-﻿namespace Flight.Flights.Features.DeletingFlight.V1;
+namespace Flight.Flights.Features.DeletingFlight.V1;
 
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
@@ -16,6 +17,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver.Linq;
+using ValueObjects;
 
 public record DeleteFlight(Guid Id) : ICommand<DeleteFlightResult>, IInternalCommand;
 
@@ -82,7 +85,7 @@ internal class DeleteFlightHandler : ICommandHandler<DeleteFlight, DeleteFlightR
             flight.DepartureDate, flight.ArriveDate, flight.ArriveAirportId, flight.DurationMinutes,
             flight.FlightDate, flight.Status, flight.Price);
 
-        var deleteFlight = (_flightDbContext.Flights.Remove(flight))?.Entity;
+        var deleteFlight = _flightDbContext.Flights.Update(flight).Entity;
 
         return new DeleteFlightResult(deleteFlight.Id);
     }

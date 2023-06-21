@@ -18,8 +18,8 @@ using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using Models.ValueObjects;
 using Passenger;
+using ValueObjects;
 
 public record CreateBooking(Guid PassengerId, Guid FlightId, string Description) : ICommand<CreateBookingResult>,
     IInternalCommand
@@ -100,7 +100,7 @@ internal class CreateBookingCommandHandler : ICommandHandler<CreateBooking, Crea
         Guard.Against.Null(command, nameof(command));
 
         var flight =
-            await _flightGrpcServiceClient.GetByIdAsync(new Flight.GetByIdRequest { Id = command.FlightId.ToString() });
+            await _flightGrpcServiceClient.GetByIdAsync(new Flight.GetByIdRequest { Id = command.FlightId.ToString() }, cancellationToken: cancellationToken);
 
         if (flight is null)
         {
@@ -108,11 +108,10 @@ internal class CreateBookingCommandHandler : ICommandHandler<CreateBooking, Crea
         }
 
         var passenger =
-            await _passengerGrpcServiceClient.GetByIdAsync(
-                new Passenger.GetByIdRequest { Id = command.PassengerId.ToString() });
+            await _passengerGrpcServiceClient.GetByIdAsync(new Passenger.GetByIdRequest { Id = command.PassengerId.ToString() }, cancellationToken: cancellationToken);
 
         var emptySeat = (await _flightGrpcServiceClient
-                .GetAvailableSeatsAsync(new GetAvailableSeatsRequest { FlightId = command.FlightId.ToString() })
+                .GetAvailableSeatsAsync(new GetAvailableSeatsRequest { FlightId = command.FlightId.ToString() }, cancellationToken: cancellationToken)
                 .ResponseAsync)
             ?.SeatDtos?.FirstOrDefault();
 
@@ -123,7 +122,7 @@ internal class CreateBookingCommandHandler : ICommandHandler<CreateBooking, Crea
             throw new BookingAlreadyExistException();
         }
 
-        var aggrigate = Models.Booking.Create(command.Id, new PassengerInfo(passenger.PassengerDto?.Name), new Trip(
+        var aggrigate = Models.Booking.Create(command.Id, PassengerInfo.Of(passenger.PassengerDto?.Name), Trip.Of(
                 flight.FlightDto.FlightNumber, new Guid(flight.FlightDto.AircraftId),
                 new Guid(flight.FlightDto.DepartureAirportId),
                 new Guid(flight.FlightDto.ArriveAirportId), flight.FlightDto.FlightDate.ToDateTime(),
@@ -136,7 +135,7 @@ internal class CreateBookingCommandHandler : ICommandHandler<CreateBooking, Crea
         await _flightGrpcServiceClient.ReserveSeatAsync(new ReserveSeatRequest
         {
             FlightId = flight.FlightDto.Id, SeatNumber = emptySeat?.SeatNumber
-        });
+        }, cancellationToken: cancellationToken);
 
         var result = await _eventStoreDbRepository.Add(
             aggrigate,

@@ -3,6 +3,7 @@ namespace Flight.Flights.Features.CreatingFlight.V1;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Aircrafts.ValueObjects;
 using Ardalis.GuardClauses;
 using BuildingBlocks.Core.CQRS;
 using BuildingBlocks.Core.Event;
@@ -10,6 +11,7 @@ using BuildingBlocks.Web;
 using Data;
 using Duende.IdentityServer.EntityFramework.Entities;
 using Exceptions;
+using Flight.Airports.ValueObjects;
 using FluentValidation;
 using MapsterMapper;
 using MassTransit;
@@ -18,6 +20,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using ValueObjects;
 
 public record CreateFlight(string FlightNumber, Guid AircraftId, Guid DepartureAirportId,
     DateTime DepartureDate, DateTime ArriveDate, Guid ArriveAirportId,
@@ -111,12 +114,12 @@ internal class CreateFlightHandler : ICommandHandler<CreateFlight, CreateFlightR
             throw new FlightAlreadyExistException();
         }
 
-        var flightEntity = Models.Flight.Create(request.Id, request.FlightNumber, request.AircraftId,
-            request.DepartureAirportId, request.DepartureDate,
-            request.ArriveDate, request.ArriveAirportId, request.DurationMinutes, request.FlightDate, request.Status,
-            request.Price);
+        var flightEntity = Models.Flight.Create(FlightId.Of(request.Id), FlightNumber.Of(request.FlightNumber), AircraftId.Of(request.AircraftId),
+            AirportId.Of(request.DepartureAirportId), DepartureDate.Of(request.DepartureDate),
+            ArriveDate.Of(request.ArriveDate), AirportId.Of(request.ArriveAirportId), DurationMinutes.Of(request.DurationMinutes), FlightDate.Of(request.FlightDate), request.Status,
+            Price.Of(request.Price));
 
-        var newFlight = (await _flightDbContext.Flights.AddAsync(flightEntity, cancellationToken))?.Entity;
+        var newFlight = (await _flightDbContext.Flights.AddAsync(flightEntity, cancellationToken)).Entity;
 
         return new CreateFlightResult(newFlight.Id);
     }

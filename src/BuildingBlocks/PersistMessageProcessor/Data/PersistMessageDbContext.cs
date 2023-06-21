@@ -3,19 +3,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BuildingBlocks.PersistMessageProcessor.Data;
 
-using System.Net;
 using Configurations;
 using Core.Model;
-using global::Polly;
 using Microsoft.Extensions.Logging;
 using Exception = System.Exception;
+using IsolationLevel = System.Data.IsolationLevel;
 
 public class PersistMessageDbContext : DbContext, IPersistMessageDbContext
 {
-    private readonly ILogger<PersistMessageDbContext> _logger;
+    private readonly ILogger<PersistMessageDbContext>? _logger;
 
     public PersistMessageDbContext(DbContextOptions<PersistMessageDbContext> options,
-        ILogger<PersistMessageDbContext> logger)
+        ILogger<PersistMessageDbContext>? logger = null)
         : base(options)
     {
         _logger = logger;
@@ -30,27 +29,34 @@ public class PersistMessageDbContext : DbContext, IPersistMessageDbContext
         builder.ToSnakeCaseTables();
     }
 
+    //ref: https://learn.microsoft.com/en-us/ef/core/miscellaneous/connection-resiliency#execution-strategies-and-transactions
+    public Task ExecuteTransactionalAsync(CancellationToken cancellationToken = default)
+    {
+        var strategy = Database.CreateExecutionStrategy();
+        return strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction =
+                await Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+            try
+            {
+                await SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
+    }
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         OnBeforeSaving();
 
-        var policy = Policy.Handle<DbUpdateConcurrencyException>()
-            .WaitAndRetryAsync(retryCount: 3,
-                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(1),
-                onRetry: (exception, timeSpan, retryCount, context) =>
-                {
-                    if (exception != null)
-                    {
-                        _logger.LogError(exception,
-                            "Request failed with {StatusCode}. Waiting {TimeSpan} before next retry. Retry attempt {RetryCount}.",
-                            HttpStatusCode.Conflict,
-                            timeSpan,
-                            retryCount);
-                    }
-                });
         try
         {
-            return await policy.ExecuteAsync(async () => await base.SaveChangesAsync(cancellationToken));
+            return await base.SaveChangesAsync(cancellationToken);
         }
         //ref: https://learn.microsoft.com/en-us/ef/core/saving/concurrency?tabs=data-annotations#resolving-concurrency-conflicts
         catch (DbUpdateConcurrencyException ex)
@@ -71,6 +77,29 @@ public class PersistMessageDbContext : DbContext, IPersistMessageDbContext
 
             return await base.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    public void CreatePersistMessageTable()
+    {
+        if (Database.GetPendingMigrations().Any())
+        {
+            throw new InvalidOperationException("Cannot create table if there are pending migrations.");
+        }
+
+        string createTableSql = @"
+            create table if not exists persist_message (
+            id uuid not null,
+            data_type text,
+            data text,
+            created timestamp with time zone not null,
+            retry_count integer not null,
+            message_status text not null default 'InProgress'::text,
+            delivery_type text not null default 'Outbox'::text,
+            version bigint not null,
+            constraint pk_persist_message primary key (id)
+            )";
+
+        Database.ExecuteSqlRaw(createTableSql);
     }
 
     private void OnBeforeSaving()
