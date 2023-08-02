@@ -1,4 +1,4 @@
-namespace Booking.Booking.Features.CreatingBook.Commands.V1;
+namespace Booking.Booking.Features.CreatingBook.V1;
 
 using Ardalis.GuardClauses;
 using BuildingBlocks.Core;
@@ -8,10 +8,10 @@ using BuildingBlocks.Core.Model;
 using BuildingBlocks.EventStoreDB.Repository;
 using BuildingBlocks.Web;
 using Duende.IdentityServer.EntityFramework.Entities;
-using Elasticsearch.Net;
 using Exceptions;
 using Flight;
 using FluentValidation;
+using Mapster;
 using MapsterMapper;
 using MassTransit;
 using MediatR;
@@ -21,8 +21,7 @@ using Microsoft.AspNetCore.Routing;
 using Passenger;
 using ValueObjects;
 
-public record CreateBooking(Guid PassengerId, Guid FlightId, string Description) : ICommand<CreateBookingResult>,
-    IInternalCommand
+public record CreateBooking(Guid PassengerId, Guid FlightId, string Description) : ICommand<CreateBookingResult>
 {
     public Guid Id { get; init; } = NewId.NextGuid();
 }
@@ -47,7 +46,7 @@ public class CreateBookingEndpoint : IMinimalEndpoint
 
                 var result = await mediator.Send(command, cancellationToken);
 
-                var response = new CreateBookingResponseDto(result.Id);
+                var response = result.Adapt<CreateBookingResponseDto>();
 
                 return Results.Ok(response);
             })
@@ -65,7 +64,7 @@ public class CreateBookingEndpoint : IMinimalEndpoint
     }
 }
 
-internal class CreateBookingValidator : AbstractValidator<CreateBooking>
+public class CreateBookingValidator : AbstractValidator<CreateBooking>
 {
     public CreateBookingValidator()
     {

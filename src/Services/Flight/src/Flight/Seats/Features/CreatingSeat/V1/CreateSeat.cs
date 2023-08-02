@@ -1,7 +1,6 @@
 namespace Flight.Seats.Features.CreatingSeat.V1;
 
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
@@ -9,11 +8,12 @@ using BuildingBlocks.Core.CQRS;
 using BuildingBlocks.Core.Event;
 using BuildingBlocks.Web;
 using Duende.IdentityServer.EntityFramework.Entities;
-using Flight.Data;
-using Flight.Seats.Exceptions;
-using Flight.Seats.Models;
+using Data;
+using Exceptions;
+using Models;
 using Flights.ValueObjects;
 using FluentValidation;
+using Mapster;
 using MapsterMapper;
 using MassTransit;
 using MediatR;
@@ -64,13 +64,13 @@ public class CreateSeatEndpoint : IMinimalEndpoint
 
         var result = await mediator.Send(command, cancellationToken);
 
-        var response = new CreateSeatResponseDto(result.Id);
+        var response = result.Adapt<CreateSeatResponseDto>();
 
         return Results.Ok(response);
     }
 }
 
-internal class CreateSeatValidator : AbstractValidator<CreateSeat>
+public class CreateSeatValidator : AbstractValidator<CreateSeat>
 {
     public CreateSeatValidator()
     {

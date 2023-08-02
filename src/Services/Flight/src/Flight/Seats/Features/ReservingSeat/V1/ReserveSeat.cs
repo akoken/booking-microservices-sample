@@ -1,4 +1,4 @@
-namespace Flight.Seats.Features.ReservingSeat.Commands.V1;
+namespace Flight.Seats.Features.ReservingSeat.V1;
 
 using System;
 using System.Threading;
@@ -7,18 +7,17 @@ using Ardalis.GuardClauses;
 using BuildingBlocks.Core.CQRS;
 using BuildingBlocks.Core.Event;
 using BuildingBlocks.Web;
-using Data;
 using Duende.IdentityServer.EntityFramework.Entities;
-using Exceptions;
-using Flights.ValueObjects;
+using Flight.Data;
+using Flight.Seats.Exceptions;
 using FluentValidation;
+using Mapster;
 using MapsterMapper;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
-using ValueObjects;
 
 public record ReserveSeat(Guid FlightId, string SeatNumber) : ICommand<ReserveSeatResult>, IInternalCommand;
 
@@ -52,17 +51,17 @@ public class ReserveSeatEndpoint : IMinimalEndpoint
     private async Task<IResult> ReserveSeat(ReserveSeatRequestDto request, IMediator mediator, IMapper mapper,
         CancellationToken cancellationToken)
     {
-        var command = mapper.Map<V1.ReserveSeat>(request);
+        var command = mapper.Map<ReserveSeat>(request);
 
         var result = await mediator.Send(command, cancellationToken);
 
-        var response = new ReserveSeatResponseDto(result.Id);
+        var response = result.Adapt<ReserveSeatResponseDto>();
 
         return Results.Ok(response);
     }
 }
 
-internal class ReserveSeatValidator : AbstractValidator<ReserveSeat>
+public class ReserveSeatValidator : AbstractValidator<ReserveSeat>
 {
     public ReserveSeatValidator()
     {
